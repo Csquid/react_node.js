@@ -1,4 +1,10 @@
 const mongoose = require('mongoose');
+//Salt를 이용해서 비밀번호를 암호화 해야 함.
+//10자리인 salt(소금) 를 만들어서 암호화 한다
+const saltRounds = 10;                          
+//bcrypt: 비밀번호를 암호화 하는것
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const userSchema = mongoose.Schema({
     name: {
@@ -31,6 +37,65 @@ const userSchema = mongoose.Schema({
     }
 });
 
+//저장을 하기 전에 무언가를 하는 함수
+userSchema.pre('save', function( next ) {
+    let user = this;
+    
+    // 유저의 패스워드가 변경이 될때만 실행
+    if(user.isModified('password')) {
+
+        console.log('inside')
+        // console.log(user);
+    
+        //비밀번호를 암호화 시킨다.
+        bcrypt.genSalt(saltRounds, function(err, salt) {
+            if(err) return next(err);
+            //user.password == plaintext Password (일반 텍스트 패스워드)
+            bcrypt.hash(user.password, salt, function(err, hash) {
+                if(err) return next(err);
+    
+                //일반 텍스트 패스워드를 해쉬된 패스워드로 바꿔준다.
+                user.password = hash;
+                next();
+
+                console.log("break");
+            });
+        });
+
+    } else {        // 만약 패스워드를 바꾸는게 아니라면 바로 나올수있게
+        next();
+    }
+
+});
+//이게 다 끝나면 register touter - user.save가 진행이 됨
+
+userSchema.methods.comparePassword = function(plainPassword, cb) {
+    //plainPassword 1234567     암호화된 비밀번호: $2b$10$pDkBoI2WbCc7eL4QwRNdXOPqwiUpCGlug5uW1uofIIftuVQ2RURv
+    bcrypt.compare(plainPassword, this.password, function(err, isMatch) {
+        if(err) return cb(err);
+        
+        cb(null, isMatch);
+    })
+}
+
+userSchema.methods.generateToken = function(cb) {
+
+    let user = this;
+
+    //jsonwebtoken을 이용해서 token 생성하기
+    let token = jwt.sign(user._id.toHexString(), 'secretToken')
+    //user._id + 'secretToken' = token
+    // ->
+    // 'secretToken' -> user._id
+
+    user.token = token;
+    user.save(function(err, user) {
+        if(err) return cb(err);
+
+        cb(null, user);
+    })
+}
+
 const User = mongoose.model('User', userSchema);
 
-module.exports = {User}
+module.exports = { User }
