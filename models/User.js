@@ -96,7 +96,7 @@ userSchema.methods.generateToken = function(cb) {
     })
 }
 
-userSchema.statics.findByToken = function (token, ch) {
+userSchema.statics.findByToken = function (token, cb) {
     let user = this;
 
     // user.id + 'secretToken'
