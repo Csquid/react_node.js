@@ -1,0 +1,14 @@
+{
+    "configurations": 
+    [
+        {
+            "name": "Launch",
+            "program": "index.js",
+            "stopOnEntry": false,
+            "args": [],
+            "env": {
+                "NODE_ENV": "development"
+            }
+        }
+    ]
+}
